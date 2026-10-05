@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Modéliser une situation par une fonction - 3e</title>
+<style>
+  :root{
+    --bg:#f4f7fb;--card:#ffffff;--ink:#172033;--muted:#667085;--line:#d8deea;
+    --accent:#3b5ccc;--accent2:#eef2ff;--ok:#177245;--bad:#b42318;--warn:#9a6700;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+  .wrap{max-width:980px;margin:0 auto;padding:24px}
+  header{display:flex;gap:18px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:18px}
+  h1{font-size:clamp(1.6rem,3vw,2.35rem);margin:0}
+  .subtitle{color:var(--muted);margin-top:6px}
+  .stats{display:flex;gap:10px;flex-wrap:wrap}
+  .pill{background:#fff;border:1px solid var(--line);border-radius:999px;padding:9px 13px;font-weight:700}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:20px;box-shadow:0 8px 24px rgba(30,50,90,.07);padding:22px;margin-bottom:16px}
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  select,button,input{font:inherit}
+  select,input{border:1px solid #bfc8d8;border-radius:12px;background:#fff;padding:11px 12px}
+  button{border:0;border-radius:12px;padding:11px 15px;font-weight:800;cursor:pointer}
+  .primary{background:var(--accent);color:#fff}
+  .secondary{background:var(--accent2);color:#263b92}
+  .ghost{background:#fff;border:1px solid var(--line);color:var(--ink)}
+  .situation{font-size:1.14rem;line-height:1.7;background:#fbfcff;border-left:5px solid var(--accent);padding:17px 18px;border-radius:12px}
+  .xdef{margin-top:14px;font-weight:700;color:#344054}
+  .question{font-size:1.25rem;font-weight:900;margin:20px 0 12px}
+  .formula-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:1.4rem;font-weight:800}
+  .formula-row input{font-size:1.25rem;min-width:240px;flex:1}
+  .hint{color:var(--muted);font-size:.94rem;margin-top:10px}
+  .feedback{margin-top:16px;border-radius:14px;padding:14px 16px;display:none;line-height:1.55}
+  .feedback.ok{display:block;background:#ecfdf3;color:#14532d;border:1px solid #abefc6}
+  .feedback.bad{display:block;background:#fef3f2;color:#7a271a;border:1px solid #fecdca}
+  .feedback.info{display:block;background:#fffaeb;color:#7a4d00;border:1px solid #fedf89}
+  .correction{margin-top:8px;font-weight:800}
+  .mini{font-size:.92rem;color:var(--muted)}
+  .progress{height:10px;background:#e9edf5;border-radius:999px;overflow:hidden;margin-top:12px}
+  .bar{height:100%;background:var(--accent);width:0%;transition:width .25s}
+  .examples{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin-top:16px}
+  .ex{border:1px solid var(--line);border-radius:13px;padding:12px;background:#fcfdff}
+  .tag{display:inline-block;font-size:.78rem;font-weight:800;background:var(--accent2);color:#2942a0;border-radius:999px;padding:4px 8px;margin-bottom:7px}
+  @media(max-width:640px){.wrap{padding:14px}.card{padding:16px}.formula-row input{min-width:0;width:100%}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Modéliser une situation par une fonction</h1>
+      <div class="subtitle">Niveau 3e • Traduire une situation de la vie courante par une expression de f(x)</div>
+    </div>
+    <div class="stats">
+      <div class="pill">Exercice <span id="num">1</span>/10</div>
+      <div class="pill">Score <span id="score">0</span>/10</div>
+    </div>
+  </header>
+
+  <div class="card">
+    <div class="toolbar">
+      <label for="level"><strong>Niveau :</strong></label>
+      <select id="level">
+        <option value="linear">Linéaires</option>
+        <option value="constant">Constantes</option>
+        <option value="affine">Affines</option>
+        <option value="mix" selected>Mélange des trois</option>
+      </select>
+      <button class="secondary" id="newSeries">Nouvelle série</button>
+    </div>
+    <div class="progress"><div class="bar" id="bar"></div></div>
+  </div>
+
+  <main class="card">
+    <div class="situation" id="situation"></div>
+    <div class="xdef" id="xdef"></div>
+    <div class="question">Exprimer f(x) en fonction de x.</div>
+    <div class="formula-row">
+      <span>f(x) =</span>
+      <input id="answer" autocomplete="off" inputmode="text" placeholder="ex. 5x + 10" aria-label="Expression de f de x" />
+      <button class="primary" id="check">Vérifier</button>
+    </div>
+    <div class="hint">Tu peux écrire par exemple <strong>5x + 10</strong>, <strong>10 + 5x</strong> ou <strong>5*x + 10</strong>.</div>
+    <div id="feedback" class="feedback"></div>
+    <div style="margin-top:15px;display:flex;gap:10px;flex-wrap:wrap">
+      <button class="ghost" id="showCorrection">Voir la correction</button>
+      <button class="secondary" id="next">Exercice suivant</button>
+    </div>
+  </main>
+
+  <section class="card">
+    <strong>Ce qu'il faut repérer</strong>
+    <div class="examples">
+      <div class="ex"><div class="tag">Variable</div><div>Que représente <strong>x</strong> ? Nombre de séances, kilomètres, semaines, objets…</div></div>
+      <div class="ex"><div class="tag">Fonction linéaire</div><div>Seulement une quantité <strong>par unité</strong> : par exemple <strong>f(x)=5x</strong>.</div></div>
+      <div class="ex"><div class="tag">Fonction constante</div><div>La quantité ne dépend pas de x : par exemple <strong>f(x)=12</strong>.</div></div>
+      <div class="ex"><div class="tag">Fonction affine</div><div>Une partie variable et une partie fixe : par exemple <strong>f(x)=5x+10</strong>.</div></div>
+    </div>
+  </section>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+let current = null;
+let index = 1;
+let score = 0;
+let answered = false;
+let seen = new Set();
+
+const randInt = (a,b) => Math.floor(Math.random()*(b-a+1))+a;
+const pick = a => a[Math.floor(Math.random()*a.length)];
+const money = n => String(n).replace('.', ',');
+
+function templateLinear(){
+  const variants = [
+    () => { const p=randInt(2,9); return {text:`Une piscine facture ${p} € chaque entrée, sans abonnement.`, xdef:`x désigne le nombre d'entrées achetées et f(x) le prix total en euros.`, a:p,b:0}; },
+    () => { const p=randInt(3,12); return {text:`Un service de location de vélos coûte ${p} € par heure, sans frais de départ.`, xdef:`x désigne le nombre d'heures de location et f(x) le prix total en euros.`, a:p,b:0}; },
+    () => { const p=randInt(4,15); return {text:`Chaque carnet vendu rapporte ${p} € à une association.`, xdef:`x désigne le nombre de carnets vendus et f(x) la somme récoltée en euros.`, a:p,b:0}; },
+    () => { const p=randInt(5,25); return {text:`Lina économise ${p} € chaque semaine, en partant de 0 €.`, xdef:`x désigne le nombre de semaines et f(x) la somme économisée en euros.`, a:p,b:0}; }
+  ];
+  return pick(variants)();
+}
+
+function templateConstant(){
+  const variants = [
+    () => { const b=randInt(8,25); return {text:`Une salle de jeux propose un pass à ${b} € : une fois le pass acheté, le prix est le même quel que soit le nombre de parties jouées.`, xdef:`x désigne le nombre de parties jouées et f(x) le prix payé en euros.`, a:0,b}; },
+    () => { const b=randInt(10,30); return {text:`Un musée propose un billet journée à ${b} €. Pendant cette journée, le prix ne change pas quel que soit le nombre de salles visitées.`, xdef:`x désigne le nombre de salles visitées et f(x) le prix du billet en euros.`, a:0,b}; },
+    () => { const b=randInt(12,35); return {text:`Un parking propose un forfait journée à ${b} €, quel que soit le nombre d'heures de stationnement dans la journée.`, xdef:`x désigne le nombre d'heures de stationnement et f(x) le prix payé en euros.`, a:0,b}; },
+    () => { const b=randInt(15,40); return {text:`Une activité propose un forfait fixe de ${b} € donnant accès à autant d'ateliers que souhaité.`, xdef:`x désigne le nombre d'ateliers réalisés et f(x) le prix total en euros.`, a:0,b}; }
+  ];
+  return pick(variants)();
+}
+
+function templateAffine(){
+  const variants = [
+    () => { const b=randInt(5,20), a=randInt(2,8); return {text:`Tarif : ${b} € pour une carte d'abonnement puis ${a} € par entrée.`, xdef:`x désigne le nombre d'entrées et f(x) le prix total en euros.`, a,b}; },
+    () => { const b=randInt(3,8), a=randInt(1,4); return {text:`Un taxi facture ${b} € de prise en charge puis ${a} € par kilomètre parcouru.`, xdef:`x désigne le nombre de kilomètres parcourus et f(x) le prix de la course en euros.`, a,b}; },
+    () => { const b=randInt(10,30), a=randInt(4,12); return {text:`La location d'un paddle coûte ${b} € de frais fixes puis ${a} € par heure.`, xdef:`x désigne le nombre d'heures de location et f(x) le prix total en euros.`, a,b}; },
+    () => { const b=randInt(2,7), a=randInt(1,5); return {text:`Un imprimeur demande ${b} € de frais de dossier puis ${a} € par affiche imprimée.`, xdef:`x désigne le nombre d'affiches imprimées et f(x) le prix total en euros.`, a,b}; },
+    () => { const b=randInt(20,60), a=randInt(5,15); return {text:`Pour une sortie, un groupe paie ${b} € de réservation puis ${a} € par participant.`, xdef:`x désigne le nombre de participants et f(x) le coût total en euros.`, a,b}; },
+    () => { const b=randInt(15,40), a=randInt(2,7); return {text:`Un forfait téléphonique comprend ${b} € de coût fixe puis ${a} € par gigaoctet supplémentaire consommé.`, xdef:`x désigne le nombre de gigaoctets supplémentaires et f(x) le prix total en euros.`, a,b}; }
+  ];
+  return pick(variants)();
+}
+
+function templateDecrease(){
+  const variants = [
+    () => { const b=randInt(40,100), a=randInt(2,8); return {text:`Une cuve contient au départ ${b} L d'eau. On retire ${a} L chaque minute.`, xdef:`x désigne le nombre de minutes et f(x) la quantité d'eau restante en litres.`, a:-a,b}; },
+    () => { const b=randInt(50,150), a=randInt(3,10); return {text:`Une carte prépayée contient ${b} €. Chaque achat effectué avec cette carte coûte ${a} €.`, xdef:`x désigne le nombre d'achats de même montant et f(x) la somme restante sur la carte en euros.`, a:-a,b}; },
+    () => { const b=randInt(60,140), a=randInt(2,6); return {text:`Un stock contient ${b} objets. Chaque jour, ${a} objets sont utilisés.`, xdef:`x désigne le nombre de jours et f(x) le nombre d'objets restant dans le stock.`, a:-a,b}; },
+    () => { const b=randInt(70,120), a=randInt(3,8); return {text:`Une batterie est chargée à ${b} %. Elle perd ${a} points de pourcentage par heure d'utilisation.`, xdef:`x désigne le nombre d'heures d'utilisation et f(x) le pourcentage de batterie restant.`, a:-a,b}; }
+  ];
+  return pick(variants)();
+}
+
+function generate(){
+  const level = $('#level').value;
+  let obj;
+  for(let tries=0;tries<40;tries++){
+    if(level==='linear') obj=templateLinear();
+    else if(level==='constant') obj=templateConstant();
+    else if(level==='affine') obj=Math.random()<.3?templateDecrease():templateAffine();
+    else {
+      const r=Math.random();
+      if(r<.3) obj=templateLinear();
+      else if(r<.5) obj=templateConstant();
+      else if(r<.85) obj=templateAffine();
+      else obj=templateDecrease();
+    }
+    const key=obj.text+'|'+obj.a+'|'+obj.b;
+    if(!seen.has(key)){seen.add(key);break;}
+  }
+  current=obj;
+  answered=false;
+  $('#situation').textContent=obj.text;
+  $('#xdef').textContent=obj.xdef;
+  $('#answer').value='';
+  $('#feedback').className='feedback';
+  $('#feedback').innerHTML='';
+  $('#num').textContent=index;
+  $('#score').textContent=score;
+  $('#bar').style.width=((index-1)/10*100)+'%';
+  $('#answer').focus();
+}
+
+function normalizeInput(s){
+  let t=s.trim().toLowerCase();
+  t=t.replace(/f\s*\(\s*x\s*\)\s*=/g,'');
+  t=t.replace(/,/g,'.').replace(/[×·]/g,'*').replace(/−/g,'-');
+  t=t.replace(/\s+/g,'');
+  t=t.replace(/(\d|\))x/g,'$1*x');
+  t=t.replace(/x(\d|\()/g,'x*$1');
+  t=t.replace(/\)(\d|x|\()/g,')*$1');
+  return t;
+}
+
+function safeValue(expr,x){
+  if(!/^[0-9x+\-*/().]+$/.test(expr)) return NaN;
+  try{
+    const fn = Function('x', '"use strict"; return ('+expr+');');
+    const v = fn(x);
+    return (typeof v==='number' && Number.isFinite(v)) ? v : NaN;
+  }catch(e){return NaN;}
+}
+
+function expectedText(){
+  const {a,b}=current;
+  if(a===0) return String(b);
+  let ax = a===1?'x':a===-1?'-x':`${a}x`;
+  if(b===0) return ax;
+  return `${ax} ${b>0?'+':'-'} ${Math.abs(b)}`;
+}
+
+function isEquivalent(input){
+  const expr=normalizeInput(input);
+  if(!expr) return false;
+  const tests=[-3,-1,0,2,5];
+  for(const x of tests){
+    const v=safeValue(expr,x);
+    const e=current.a*x+current.b;
+    if(!Number.isFinite(v) || Math.abs(v-e)>1e-9) return false;
+  }
+  return true;
+}
+
+function nature(){
+  const {a,b}=current;
+  if(a===0) return 'constante';
+  if(b===0) return 'linéaire';
+  return 'affine';
+}
+
+function explanation(){
+  const {a,b}=current;
+  const parts=[];
+  if(a>0) parts.push(`la partie variable vaut ${a} × x = ${a}x`);
+  else if(a<0) parts.push(`la quantité diminue de ${Math.abs(a)} par unité, donc la partie variable est ${a}x`);
+  if(a===0) parts.push(`le résultat ne dépend pas de x : il reste toujours égal à ${b}`);
+  else if(b>0) parts.push(`la valeur de départ / partie fixe est ${b}`);
+  else if(b===0) parts.push(`il n'y a pas de partie fixe`);
+  return `Il s'agit d'une fonction ${nature()} : ` + parts.join(' ; ') + '.';
+}
+
+function check(){
+  const val=$('#answer').value;
+  const fb=$('#feedback');
+  if(!val.trim()){
+    fb.className='feedback info';
+    fb.innerHTML='Écris d’abord une expression pour <strong>f(x)</strong>.';
+    return;
+  }
+  if(isEquivalent(val)){
+    if(!answered){score++;answered=true;$('#score').textContent=score;}
+    fb.className='feedback ok';
+    fb.innerHTML=`✅ Bonne modélisation !<div class="correction">f(x) = ${expectedText()}</div><div class="mini">${explanation()}</div>`;
+  } else {
+    answered=true;
+    fb.className='feedback bad';
+    fb.innerHTML=`❌ Ce n'est pas la bonne expression. Repère d'abord ce qui est multiplié par <strong>x</strong>, puis la éventuelle partie fixe.`;
+  }
+}
+
+function showCorrection(){
+  const fb=$('#feedback');
+  fb.className='feedback info';
+  fb.innerHTML=`<strong>Correction :</strong><div class="correction">f(x) = ${expectedText()}</div><div class="mini">${explanation()}</div>`;
+}
+
+function next(){
+  if(index<10){index++;generate();}
+  else {
+    $('#bar').style.width='100%';
+    const fb=$('#feedback');
+    fb.className='feedback info';
+    fb.innerHTML=`Série terminée : <strong>${score}/10</strong>. Clique sur « Nouvelle série » pour recommencer avec d'autres situations.`;
+  }
+}
+
+function newSeries(){
+  index=1;score=0;seen.clear();$('#score').textContent=0;generate();
+}
+
+$('#check').addEventListener('click',check);
+$('#answer').addEventListener('keydown',e=>{if(e.key==='Enter')check();});
+$('#showCorrection').addEventListener('click',showCorrection);
+$('#next').addEventListener('click',next);
+$('#newSeries').addEventListener('click',newSeries);
+$('#level').addEventListener('change',newSeries);
+
+generate();
+</script>
+</body>
+</html>
